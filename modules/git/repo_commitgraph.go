@@ -11,7 +11,7 @@ import (
 
 	gitealog "code.gitea.io/gitea/modules/log"
 
-	"github.com/go-git/go-git/v5/plumbing/format/commitgraph"
+	v2 "github.com/go-git/go-git/v5/plumbing/format/commitgraph/v2"
 	cgobject "github.com/go-git/go-git/v5/plumbing/object/commitgraph"
 )
 
@@ -21,8 +21,8 @@ func (r *Repository) CommitNodeIndex() (cgobject.CommitNodeIndex, *os.File) {
 
 	file, err := os.Open(indexPath)
 	if err == nil {
-		var index commitgraph.Index
-		index, err = commitgraph.OpenFileIndex(file)
+		var index v2.Index
+		index, err = v2.OpenFileIndex(file)
 		if err == nil {
 			return cgobject.NewGraphCommitNodeIndex(index, r.gogitRepo.Storer), file
 		}
