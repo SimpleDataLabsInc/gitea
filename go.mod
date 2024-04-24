@@ -77,10 +77,10 @@ require (
 	github.com/yohcop/openid-go v1.0.0
 	github.com/yuin/goldmark v1.4.13
 	github.com/yuin/goldmark-meta v0.0.0-20191126180153-f0638e958b60
-	golang.org/x/crypto v0.16.0
-	golang.org/x/net v0.19.0
+	golang.org/x/crypto v0.21.0
+	golang.org/x/net v0.23.0
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
-	golang.org/x/sys v0.15.0
+	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
 	golang.org/x/tools v0.13.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
