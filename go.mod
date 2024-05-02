@@ -62,13 +62,13 @@ require (
 	github.com/olivere/elastic/v7 v7.0.9
 	github.com/pkg/errors v0.9.1
 	github.com/pquerna/otp v1.2.0
-	github.com/prometheus/client_golang v1.1.0
+	github.com/prometheus/client_golang v1.11.1
 	github.com/quasoft/websspi v1.0.0
 	github.com/sergi/go-diff v1.1.0
 	github.com/shurcooL/vfsgen v0.0.0-20181202132449-6a9ea43bcacd
 	github.com/stretchr/testify v1.8.4
 	github.com/tstranex/u2f v1.0.0
-	github.com/unknwon/cae v1.0.0
+	github.com/unknwon/cae v1.0.1
 	github.com/unknwon/com v1.0.1
 	github.com/unknwon/i18n v0.0.0-20190805065654-5c6446a380b6
 	github.com/unknwon/paginater v0.0.0-20151104151617-7748a72e0141
@@ -87,7 +87,7 @@ require (
 	gopkg.in/ini.v1 v1.52.0
 	gopkg.in/ldap.v3 v3.0.2
 	gopkg.in/testfixtures.v2 v2.5.0
-	gopkg.in/yaml.v2 v2.2.8
+	gopkg.in/yaml.v2 v2.3.0
 	mvdan.cc/xurls/v2 v2.2.0
 	strk.kbt.io/projects/go/libravatar v0.0.0-20191008002943-06d1c002b251
 	xorm.io/builder v0.3.7
@@ -116,6 +116,7 @@ require (
 	github.com/blevesearch/zap/v12 v12.0.7 // indirect
 	github.com/boombuler/barcode v1.0.1-0.20190219062509-6c824513bacc // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20190329173943-551aad21a668 // indirect
+	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
 	github.com/couchbase/gomemcached v0.0.0-20191004160342-7b5da2ec40b2 // indirect
 	github.com/couchbase/goutils v0.0.0-20191018232750-b49639060d85 // indirect
@@ -144,7 +145,7 @@ require (
 	github.com/go-stack/stack v1.8.0 // indirect
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.4.1 // indirect
+	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
@@ -179,9 +180,9 @@ require (
 	github.com/philhofer/fwd v1.0.0 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4 // indirect
-	github.com/prometheus/common v0.6.0 // indirect
-	github.com/prometheus/procfs v0.0.4 // indirect
+	github.com/prometheus/client_model v0.2.0 // indirect
+	github.com/prometheus/common v0.26.0 // indirect
+	github.com/prometheus/procfs v0.6.0 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
 	github.com/shurcooL/httpfs v0.0.0-20190527155220-6a4d4a70508b // indirect
 	github.com/siddontang/go-snappy v0.0.0-20140704025258-d8f7bb82a96d // indirect
@@ -203,7 +204,7 @@ require (
 	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1 // indirect
 	google.golang.org/appengine v1.6.5 // indirect
-	google.golang.org/protobuf v1.22.0 // indirect
+	google.golang.org/protobuf v1.26.0-rc.1 // indirect
 	gopkg.in/alexcesaro/quotedprintable.v3 v3.0.0-20150716171945-2caba252f4dc // indirect
 	gopkg.in/asn1-ber.v1 v1.0.0-20150924051756-4e86f4367175 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
