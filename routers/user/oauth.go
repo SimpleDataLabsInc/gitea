@@ -20,7 +20,7 @@ import (
 	"code.gitea.io/gitea/modules/timeutil"
 
 	"gitea.com/macaron/binding"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 )
 
 const (

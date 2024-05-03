@@ -22,7 +22,7 @@ import (
 	"code.gitea.io/gitea/modules/setting"
 
 	"gitea.com/macaron/macaron"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 )
 
 const (
