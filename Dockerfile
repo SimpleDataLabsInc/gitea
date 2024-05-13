@@ -27,14 +27,15 @@ RUN if [ -n "${GITEA_VERSION}" ]; then git checkout "${GITEA_VERSION}"; fi \
  #&& make build
  && make clean-all build
 
-FROM alpine:3.18.5
+FROM alpine:3.19.1
 LABEL maintainer="maintainers@gitea.io"
 
 EXPOSE 22 3000
 
 RUN apk --no-cache add bash
 RUN apk --no-cache add ca-certificates
-RUN apk --no-cache add curl
+# RUN apk --no-cache add curl
+RUN apk --no-cache add curl --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
 RUN apk del libidn2
 RUN apk --no-cache add libidn2
 RUN apk --no-cache add gettext
