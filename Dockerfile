@@ -36,6 +36,7 @@ RUN apk --no-cache add bash
 RUN apk --no-cache add ca-certificates
 # RUN apk --no-cache add curl
 RUN apk --no-cache add curl --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
+RUN apk --no-cache upgrade libssl3 --repository=https://dl-cdn.alpinelinux.org/alpine/edge/main
 RUN apk del libidn2
 RUN apk --no-cache add libidn2
 RUN apk --no-cache add gettext
