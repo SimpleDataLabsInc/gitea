@@ -34,7 +34,7 @@ EXPOSE 22 3000
 
 RUN apk --no-cache add bash
 RUN apk --no-cache add ca-certificates
-# RUN apk --no-cache add curl
+RUN apk --no-cache add curl
 RUN apk del libidn2
 RUN apk --no-cache add libidn2
 RUN apk --no-cache add gettext
