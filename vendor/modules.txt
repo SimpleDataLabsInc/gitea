@@ -245,8 +245,8 @@ github.com/emirpasic/gods/utils
 # github.com/ethantkoenig/rupture v0.0.0-20180203182544-0a76f03a811a
 ## explicit
 github.com/ethantkoenig/rupture
-# github.com/fatih/color v1.9.0
-## explicit; go 1.13
+# github.com/fatih/color v1.16.0
+## explicit; go 1.17
 github.com/fatih/color
 # github.com/fatih/structtag v1.2.0
 ## explicit; go 1.12
@@ -463,11 +463,11 @@ github.com/gorilla/securecookie
 # github.com/gorilla/sessions v1.2.0
 ## explicit
 github.com/gorilla/sessions
-# github.com/hashicorp/go-cleanhttp v0.5.1
-## explicit
-github.com/hashicorp/go-cleanhttp
-# github.com/hashicorp/go-retryablehttp v0.6.6
+# github.com/hashicorp/go-cleanhttp v0.5.2
 ## explicit; go 1.13
+github.com/hashicorp/go-cleanhttp
+# github.com/hashicorp/go-retryablehttp v0.7.7
+## explicit; go 1.19
 github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/hcl v1.0.0
 ## explicit
@@ -580,11 +580,11 @@ github.com/markbates/goth/providers/nextcloud
 github.com/markbates/goth/providers/openidConnect
 github.com/markbates/goth/providers/twitter
 github.com/markbates/goth/providers/yandex
-# github.com/mattn/go-colorable v0.1.4
-## explicit
+# github.com/mattn/go-colorable v0.1.13
+## explicit; go 1.15
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.11
-## explicit; go 1.12
+# github.com/mattn/go-isatty v0.0.20
+## explicit; go 1.15
 github.com/mattn/go-isatty
 # github.com/mattn/go-oci8 v0.0.0-20190320171441-14ba190cf52d
 ## explicit
@@ -858,7 +858,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.18.0
+# golang.org/x/sys v0.20.0
 ## explicit; go 1.18
 golang.org/x/sys/cpu
 golang.org/x/sys/execabs
