@@ -6,7 +6,7 @@ FROM golang:1.23.0-alpine3.19 AS build-env
 #ARG GOPROXY
 #ENV GOPROXY ${GOPROXY:-direct}
 
-ARG GITEA_VERSION="release/v1.12"
+ARG GITEA_VERSION="sai/test"
 ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS "bindata $TAGS"
 ENV NODE_OPTIONS "--openssl-legacy-provider"
