@@ -1,7 +1,7 @@
 
 ###################################
 #Build stage
-FROM golang:1.21.4-alpine3.18 AS build-env
+FROM golang:1.23.0-bookworm AS build-env
 
 #ARG GOPROXY
 #ENV GOPROXY ${GOPROXY:-direct}
@@ -13,10 +13,10 @@ ENV NODE_OPTIONS "--openssl-legacy-provider"
 #ARG CGO_EXTRA_CFLAGS
 
 #Build deps
-RUN apk update && \
-    apk upgrade
-RUN apk --no-cache add build-base git nodejs npm
-RUN apk --no-cache add sqlite>3.38
+RUN apt -y update && \
+    apt -y upgrade
+RUN apt -y  install build-essential git nodejs npm
+RUN apt -y  install sqlite3
 
 #Setup repo
 COPY . ${GOPATH}/src/code.gitea.io/gitea
