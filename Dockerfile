@@ -14,9 +14,9 @@ ENV NODE_OPTIONS "--openssl-legacy-provider"
 
 #Build deps
 RUN apk update && \
-  apk upgrade
-RUN apk --no-cache add build-base git nodejs npm
-RUN apk --no-cache add sqlite>3.38
+  apk upgrade && \
+  apk --no-cache add build-base git nodejs npm && \
+  apk --no-cache add sqlite>3.38
 
 #Setup repo
 COPY . ${GOPATH}/src/code.gitea.io/gitea
