@@ -79,17 +79,41 @@ func value2Bytes(rawValue *reflect.Value) ([]byte, error) {
 	return []byte(str), nil
 }
 
-func (session *Session) rows2maps(rows *core.Rows) (resultsSlice []map[string][]byte, err error) {
+func row2map(rows *core.Rows, fields []string) (resultsMap map[string][]byte, err error) {
+	result := make(map[string][]byte)
+	scanResultContainers := make([]interface{}, len(fields))
+	for i := 0; i < len(fields); i++ {
+		var scanResultContainer interface{}
+		scanResultContainers[i] = &scanResultContainer
+	}
+	if err := rows.Scan(scanResultContainers...); err != nil {
+		return nil, err
+	}
+
+	for ii, key := range fields {
+		rawValue := reflect.Indirect(reflect.ValueOf(scanResultContainers[ii]))
+		//if row is null then ignore
+		if rawValue.Interface() == nil {
+			result[key] = []byte{}
+			continue
+		}
+
+		if data, err := value2Bytes(&rawValue); err == nil {
+			result[key] = data
+		} else {
+			return nil, err // !nashtsai! REVIEW, should return err or just error log?
+		}
+	}
+	return result, nil
+}
+
+func rows2maps(rows *core.Rows) (resultsSlice []map[string][]byte, err error) {
 	fields, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-	types, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
 	for rows.Next() {
-		result, err := session.engine.row2mapBytes(rows, types, fields)
+		result, err := row2map(rows, fields)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +130,7 @@ func (session *Session) queryBytes(sqlStr string, args ...interface{}) ([]map[st
 	}
 	defer rows.Close()
 
-	return session.rows2maps(rows)
+	return rows2maps(rows)
 }
 
 func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, error) {

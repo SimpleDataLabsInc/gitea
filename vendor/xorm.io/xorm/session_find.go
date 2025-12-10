@@ -57,17 +57,8 @@ func (session *Session) FindAndCount(rowsSlicePtr interface{}, condiBean ...inte
 	if session.statement.SelectStr != "" {
 		session.statement.SelectStr = ""
 	}
-	if len(session.statement.ColumnMap) > 0 {
-		session.statement.ColumnMap = []string{}
-	}
 	if session.statement.OrderStr != "" {
 		session.statement.OrderStr = ""
-	}
-	if session.statement.LimitN != nil {
-		session.statement.LimitN = nil
-	}
-	if session.statement.Start > 0 {
-		session.statement.Start = 0
 	}
 
 	// session has stored the conditions so we use `unscoped` to avoid duplicated condition.
@@ -117,11 +108,8 @@ func (session *Session) find(rowsSlicePtr interface{}, condiBean ...interface{})
 	)
 	if tp == tpStruct {
 		if !session.statement.NoAutoCondition && len(condiBean) > 0 {
-			condTable, err := session.engine.tagParser.Parse(reflect.ValueOf(condiBean[0]))
-			if err != nil {
-				return err
-			}
-			autoCond, err = session.statement.BuildConds(condTable, condiBean[0], true, true, false, true, addedTableName)
+			var err error
+			autoCond, err = session.statement.BuildConds(table, condiBean[0], true, true, false, true, addedTableName)
 			if err != nil {
 				return err
 			}
@@ -329,7 +317,7 @@ func (session *Session) cacheFind(t reflect.Type, sqlStr string, rowsSlicePtr in
 			}
 			var pk schemas.PK = make([]interface{}, len(table.PrimaryKeys))
 			for i, col := range table.PKColumns() {
-				pk[i], err = col.ConvertID(res[i])
+				pk[i], err = session.engine.idTypeAssertion(col, res[i])
 				if err != nil {
 					return err
 				}
@@ -379,7 +367,7 @@ func (session *Session) cacheFind(t reflect.Type, sqlStr string, rowsSlicePtr in
 		} else {
 			session.engine.logger.Debugf("[cache] cache hit bean: %v, %v, %v", tableName, id, bean)
 
-			pk, err := table.IDOfV(reflect.ValueOf(bean))
+			pk, err := session.engine.IDOf(bean)
 			if err != nil {
 				return err
 			}
@@ -428,6 +416,7 @@ func (session *Session) cacheFind(t reflect.Type, sqlStr string, rowsSlicePtr in
 		if err != nil {
 			return err
 		}
+
 		session.statement = statement
 
 		vs := reflect.Indirect(reflect.ValueOf(beans))
@@ -436,7 +425,7 @@ func (session *Session) cacheFind(t reflect.Type, sqlStr string, rowsSlicePtr in
 			if rv.Kind() != reflect.Ptr {
 				rv = rv.Addr()
 			}
-			id, err := table.IDOfV(rv)
+			id, err := session.engine.idOfV(rv)
 			if err != nil {
 				return err
 			}

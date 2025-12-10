@@ -9,7 +9,6 @@ import (
 	"time"
 )
 
-// Zeroable represents an interface which could know if it's a zero value
 type Zeroable interface {
 	IsZero() bool
 }
@@ -22,39 +21,39 @@ func IsZero(k interface{}) bool {
 		return true
 	}
 
-	switch t := k.(type) {
+	switch k.(type) {
 	case int:
-		return t == 0
+		return k.(int) == 0
 	case int8:
-		return t == 0
+		return k.(int8) == 0
 	case int16:
-		return t == 0
+		return k.(int16) == 0
 	case int32:
-		return t == 0
+		return k.(int32) == 0
 	case int64:
-		return t == 0
+		return k.(int64) == 0
 	case uint:
-		return t == 0
+		return k.(uint) == 0
 	case uint8:
-		return t == 0
+		return k.(uint8) == 0
 	case uint16:
-		return t == 0
+		return k.(uint16) == 0
 	case uint32:
-		return t == 0
+		return k.(uint32) == 0
 	case uint64:
-		return t == 0
+		return k.(uint64) == 0
 	case float32:
-		return t == 0
+		return k.(float32) == 0
 	case float64:
-		return t == 0
+		return k.(float64) == 0
 	case bool:
-		return !t
+		return k.(bool) == false
 	case string:
-		return t == ""
+		return k.(string) == ""
 	case *time.Time:
-		return t == nilTime || IsTimeZero(*t)
+		return k.(*time.Time) == nilTime || IsTimeZero(*k.(*time.Time))
 	case time.Time:
-		return IsTimeZero(t)
+		return IsTimeZero(k.(time.Time))
 	case Zeroable:
 		return k.(Zeroable) == nil || k.(Zeroable).IsZero()
 	case reflect.Value: // for go version less than 1.13 because reflect.Value has no method IsZero
@@ -66,7 +65,6 @@ func IsZero(k interface{}) bool {
 
 var zeroType = reflect.TypeOf((*Zeroable)(nil)).Elem()
 
-// IsValueZero returns true if the reflect Value is a zero
 func IsValueZero(v reflect.Value) bool {
 	switch v.Kind() {
 	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Slice:
@@ -90,7 +88,6 @@ func IsValueZero(v reflect.Value) bool {
 	return false
 }
 
-// IsStructZero returns true if the Value is a struct and all fields is zero
 func IsStructZero(v reflect.Value) bool {
 	if !v.IsValid() || v.NumField() == 0 {
 		return true
@@ -123,7 +120,6 @@ func IsStructZero(v reflect.Value) bool {
 	return true
 }
 
-// IsArrayZero returns true is a slice of array is zero
 func IsArrayZero(v reflect.Value) bool {
 	if !v.IsValid() || v.Len() == 0 {
 		return true
@@ -138,13 +134,11 @@ func IsArrayZero(v reflect.Value) bool {
 	return true
 }
 
-// represents all zero times
 const (
 	ZeroTime0 = "0000-00-00 00:00:00"
 	ZeroTime1 = "0001-01-01 00:00:00"
 )
 
-// IsTimeZero return true if a time is zero
 func IsTimeZero(t time.Time) bool {
 	return t.IsZero() || t.Format("2006-01-02 15:04:05") == ZeroTime0 ||
 		t.Format("2006-01-02 15:04:05") == ZeroTime1

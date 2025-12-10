@@ -11,8 +11,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
+	"xorm.io/builder"
 	"xorm.io/xorm/internal/utils"
 	"xorm.io/xorm/schemas"
 )
@@ -112,14 +112,13 @@ func (session *Session) innerInsertMulti(rowsSlicePtr interface{}) (int64, error
 		return 0, ErrTableNotFound
 	}
 
-	var (
-		table          = session.statement.RefTable
-		size           = sliceValue.Len()
-		colNames       []string
-		colMultiPlaces []string
-		args           []interface{}
-		cols           []*schemas.Column
-	)
+	table := session.statement.RefTable
+	size := sliceValue.Len()
+
+	var colNames []string
+	var colMultiPlaces []string
+	var args []interface{}
+	var cols []*schemas.Column
 
 	for i := 0; i < size; i++ {
 		v := sliceValue.Index(i)
@@ -234,7 +233,7 @@ func (session *Session) innerInsertMulti(rowsSlicePtr interface{}) (int64, error
 			for _, closure := range session.afterClosures {
 				closure(elemValue)
 			}
-			if processor, ok := elemValue.(AfterInsertProcessor); ok {
+			if processor, ok := interface{}(elemValue).(AfterInsertProcessor); ok {
 				processor.AfterInsert()
 			}
 		} else {
@@ -247,7 +246,7 @@ func (session *Session) innerInsertMulti(rowsSlicePtr interface{}) (int64, error
 					session.afterInsertBeans[elemValue] = &afterClosures
 				}
 			} else {
-				if _, ok := elemValue.(AfterInsertProcessor); ok {
+				if _, ok := interface{}(elemValue).(AfterInsertProcessor); ok {
 					session.afterInsertBeans[elemValue] = nil
 				}
 			}
@@ -266,11 +265,12 @@ func (session *Session) InsertMulti(rowsSlicePtr interface{}) (int64, error) {
 
 	sliceValue := reflect.Indirect(reflect.ValueOf(rowsSlicePtr))
 	if sliceValue.Kind() != reflect.Slice {
-		return 0, ErrPtrSliceType
+		return 0, ErrParamsType
+
 	}
 
 	if sliceValue.Len() <= 0 {
-		return 0, ErrNoElementsOnSlice
+		return 0, nil
 	}
 
 	return session.innerInsertMulti(rowsSlicePtr)
@@ -375,7 +375,9 @@ func (session *Session) innerInsert(bean interface{}) (int64, error) {
 			return 1, nil
 		}
 
-		return 1, convertAssignV(aiValue.Addr(), id)
+		aiValue.Set(int64ToIntValue(id, aiValue.Type()))
+
+		return 1, nil
 	} else if len(table.AutoIncrement) > 0 && (session.engine.dialect.URI().DBType == schemas.POSTGRES ||
 		session.engine.dialect.URI().DBType == schemas.MSSQL) {
 		res, err := session.queryBytes(sqlStr, args...)
@@ -415,7 +417,9 @@ func (session *Session) innerInsert(bean interface{}) (int64, error) {
 			return 1, nil
 		}
 
-		return 1, convertAssignV(aiValue.Addr(), id)
+		aiValue.Set(int64ToIntValue(id, aiValue.Type()))
+
+		return 1, nil
 	}
 
 	res, err := session.exec(sqlStr, args...)
@@ -455,9 +459,7 @@ func (session *Session) innerInsert(bean interface{}) (int64, error) {
 		return res.RowsAffected()
 	}
 
-	if err := convertAssignV(aiValue.Addr(), id); err != nil {
-		return 0, err
-	}
+	aiValue.Set(int64ToIntValue(id, aiValue.Type()))
 
 	return res.RowsAffected()
 }
@@ -481,7 +483,7 @@ func (session *Session) cacheInsert(table string) error {
 	if cacher == nil {
 		return nil
 	}
-	session.engine.logger.Debugf("[cache] clear SQL: %v", table)
+	session.engine.logger.Debugf("[cache] clear sql: %v", table)
 	cacher.ClearIds(table)
 	return nil
 }
@@ -498,16 +500,6 @@ func (session *Session) genInsertColumns(bean interface{}) ([]string, []interfac
 		}
 
 		if col.IsDeleted {
-			colNames = append(colNames, col.Name)
-			if !col.Nullable {
-				if col.SQLType.IsNumeric() {
-					args = append(args, 0)
-				} else {
-					args = append(args, time.Time{}.Format("2006-01-02 15:04:05"))
-				}
-			} else {
-				args = append(args, nil)
-			}
 			continue
 		}
 
@@ -631,10 +623,73 @@ func (session *Session) insertMap(columns []string, args []interface{}) (int64, 
 		return 0, ErrTableNotFound
 	}
 
-	sql, args, err := session.statement.GenInsertMapSQL(columns, args)
-	if err != nil {
-		return 0, err
+	exprs := session.statement.ExprColumns
+	w := builder.NewWriter()
+	// if insert where
+	if session.statement.Conds().IsValid() {
+		if _, err := w.WriteString(fmt.Sprintf("INSERT INTO %s (", session.engine.Quote(tableName))); err != nil {
+			return 0, err
+		}
+
+		if err := session.engine.dialect.Quoter().JoinWrite(w.Builder, append(columns, exprs.ColNames...), ","); err != nil {
+			return 0, err
+		}
+
+		if _, err := w.WriteString(") SELECT "); err != nil {
+			return 0, err
+		}
+
+		if err := session.statement.WriteArgs(w, args); err != nil {
+			return 0, err
+		}
+
+		if len(exprs.Args) > 0 {
+			if _, err := w.WriteString(","); err != nil {
+				return 0, err
+			}
+			if err := exprs.WriteArgs(w); err != nil {
+				return 0, err
+			}
+		}
+
+		if _, err := w.WriteString(fmt.Sprintf(" FROM %s WHERE ", session.engine.Quote(tableName))); err != nil {
+			return 0, err
+		}
+
+		if err := session.statement.Conds().WriteTo(w); err != nil {
+			return 0, err
+		}
+	} else {
+		qm := strings.Repeat("?,", len(columns))
+		qm = qm[:len(qm)-1]
+
+		if _, err := w.WriteString(fmt.Sprintf("INSERT INTO %s (", session.engine.Quote(tableName))); err != nil {
+			return 0, err
+		}
+
+		if err := session.engine.dialect.Quoter().JoinWrite(w.Builder, append(columns, exprs.ColNames...), ","); err != nil {
+			return 0, err
+		}
+		if _, err := w.WriteString(fmt.Sprintf(") VALUES (%s", qm)); err != nil {
+			return 0, err
+		}
+
+		w.Append(args...)
+		if len(exprs.Args) > 0 {
+			if _, err := w.WriteString(","); err != nil {
+				return 0, err
+			}
+			if err := exprs.WriteArgs(w); err != nil {
+				return 0, err
+			}
+		}
+		if _, err := w.WriteString(")"); err != nil {
+			return 0, err
+		}
 	}
+
+	sql := w.String()
+	args = w.Args()
 
 	if err := session.cacheInsert(tableName); err != nil {
 		return 0, err

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"xorm.io/xorm/caches"
-	"xorm.io/xorm/contexts"
 	"xorm.io/xorm/dialects"
 	"xorm.io/xorm/log"
 	"xorm.io/xorm/names"
@@ -144,14 +143,6 @@ func (eg *EngineGroup) SetLogger(logger interface{}) {
 	}
 }
 
-// AddHook adds Hook
-func (eg *EngineGroup) AddHook(hook contexts.Hook) {
-	eg.Engine.AddHook(hook)
-	for i := 0; i < len(eg.slaves); i++ {
-		eg.slaves[i].AddHook(hook)
-	}
-}
-
 // SetLogLevel sets the logger level
 func (eg *EngineGroup) SetLogLevel(level log.LogLevel) {
 	eg.Engine.SetLogLevel(level)
@@ -165,14 +156,6 @@ func (eg *EngineGroup) SetMapper(mapper names.Mapper) {
 	eg.Engine.SetMapper(mapper)
 	for i := 0; i < len(eg.slaves); i++ {
 		eg.slaves[i].SetMapper(mapper)
-	}
-}
-
-// SetTagIdentifier set the tag identifier
-func (eg *EngineGroup) SetTagIdentifier(tagIdentifier string) {
-	eg.Engine.SetTagIdentifier(tagIdentifier)
-	for i := 0; i < len(eg.slaves); i++ {
-		eg.slaves[i].SetTagIdentifier(tagIdentifier)
 	}
 }
 
@@ -198,7 +181,6 @@ func (eg *EngineGroup) SetPolicy(policy GroupPolicy) *EngineGroup {
 	return eg
 }
 
-// SetQuotePolicy sets the special quote policy
 func (eg *EngineGroup) SetQuotePolicy(quotePolicy dialects.QuotePolicy) {
 	eg.Engine.SetQuotePolicy(quotePolicy)
 	for i := 0; i < len(eg.slaves); i++ {

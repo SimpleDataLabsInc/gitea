@@ -162,11 +162,7 @@ var (
 		"ZEROFILL":     true,
 	}
 
-	mysqlQuoter = schemas.Quoter{
-		Prefix:     '`',
-		Suffix:     '`',
-		IsReserved: schemas.AlwaysReserve,
-	}
+	mysqlQuoter = schemas.Quoter{'`', '`', schemas.AlwaysReserve}
 )
 
 type mysql struct {
@@ -186,43 +182,6 @@ type mysql struct {
 func (db *mysql) Init(uri *URI) error {
 	db.quoter = mysqlQuoter
 	return db.Base.Init(db, uri)
-}
-
-func (db *mysql) Version(ctx context.Context, queryer core.Queryer) (*schemas.Version, error) {
-	rows, err := queryer.QueryContext(ctx, "SELECT @@VERSION")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var version string
-	if !rows.Next() {
-		return nil, errors.New("Unknow version")
-	}
-
-	if err := rows.Scan(&version); err != nil {
-		return nil, err
-	}
-
-	fields := strings.Split(version, "-")
-	if len(fields) == 3 && fields[1] == "TiDB" {
-		// 5.7.25-TiDB-v3.0.3
-		return &schemas.Version{
-			Number:  strings.TrimPrefix(fields[2], "v"),
-			Level:   fields[0],
-			Edition: fields[1],
-		}, nil
-	}
-
-	var edition string
-	if len(fields) == 2 {
-		edition = fields[1]
-	}
-
-	return &schemas.Version{
-		Number:  fields[0],
-		Edition: edition,
-	}, nil
 }
 
 func (db *mysql) SetParams(params map[string]string) {
@@ -291,10 +250,6 @@ func (db *mysql) SQLType(c *schemas.Column) string {
 		c.Length = 40
 	case schemas.Json:
 		res = schemas.Text
-	case schemas.UnsignedInt:
-		res = schemas.Int
-	case schemas.UnsignedBigInt:
-		res = schemas.BigInt
 	default:
 		res = t
 	}
@@ -312,11 +267,6 @@ func (db *mysql) SQLType(c *schemas.Column) string {
 	} else if hasLen1 {
 		res += "(" + strconv.Itoa(c.Length) + ")"
 	}
-
-	if c.SQLType.Name == schemas.UnsignedBigInt || c.SQLType.Name == schemas.UnsignedInt {
-		res += " UNSIGNED"
-	}
-
 	return res
 }
 
@@ -343,8 +293,8 @@ func (db *mysql) IsTableExist(queryer core.Queryer, ctx context.Context, tableNa
 
 func (db *mysql) AddColumnSQL(tableName string, col *schemas.Column) string {
 	quoter := db.dialect.Quoter()
-	s, _ := ColumnString(db, col, true)
-	sql := fmt.Sprintf("ALTER TABLE %v ADD %v", quoter.Quote(tableName), s)
+	sql := fmt.Sprintf("ALTER TABLE %v ADD %v", quoter.Quote(tableName),
+		db.String(col))
 	if len(col.Comment) > 0 {
 		sql += " COMMENT '" + col.Comment + "'"
 	}
@@ -353,17 +303,8 @@ func (db *mysql) AddColumnSQL(tableName string, col *schemas.Column) string {
 
 func (db *mysql) GetColumns(queryer core.Queryer, ctx context.Context, tableName string) ([]string, map[string]*schemas.Column, error) {
 	args := []interface{}{db.uri.DBName, tableName}
-	alreadyQuoted := "(INSTR(VERSION(), 'maria') > 0 && " +
-		"(SUBSTRING_INDEX(VERSION(), '.', 1) > 10 || " +
-		"(SUBSTRING_INDEX(VERSION(), '.', 1) = 10 && " +
-		"(SUBSTRING_INDEX(SUBSTRING(VERSION(), 4), '.', 1) > 2 || " +
-		"(SUBSTRING_INDEX(SUBSTRING(VERSION(), 4), '.', 1) = 2 && " +
-		"SUBSTRING_INDEX(SUBSTRING(VERSION(), 6), '-', 1) >= 7)))))"
 	s := "SELECT `COLUMN_NAME`, `IS_NULLABLE`, `COLUMN_DEFAULT`, `COLUMN_TYPE`," +
-		" `COLUMN_KEY`, `EXTRA`, `COLUMN_COMMENT`, " +
-		alreadyQuoted + " AS NEEDS_QUOTE " +
-		"FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?" +
-		" ORDER BY `COLUMNS`.ORDINAL_POSITION"
+		" `COLUMN_KEY`, `EXTRA`,`COLUMN_COMMENT` FROM `INFORMATION_SCHEMA`.`COLUMNS` WHERE `TABLE_SCHEMA` = ? AND `TABLE_NAME` = ?"
 
 	rows, err := queryer.QueryContext(ctx, s, args...)
 	if err != nil {
@@ -377,35 +318,27 @@ func (db *mysql) GetColumns(queryer core.Queryer, ctx context.Context, tableName
 		col := new(schemas.Column)
 		col.Indexes = make(map[string]int)
 
-		var columnName, nullableStr, colType, colKey, extra, comment string
-		var alreadyQuoted, isUnsigned bool
+		var columnName, isNullable, colType, colKey, extra, comment string
 		var colDefault *string
-		err = rows.Scan(&columnName, &nullableStr, &colDefault, &colType, &colKey, &extra, &comment, &alreadyQuoted)
+		err = rows.Scan(&columnName, &isNullable, &colDefault, &colType, &colKey, &extra, &comment)
 		if err != nil {
 			return nil, nil, err
 		}
 		col.Name = strings.Trim(columnName, "` ")
 		col.Comment = comment
-		if nullableStr == "YES" {
+		if "YES" == isNullable {
 			col.Nullable = true
 		}
 
-		if colDefault != nil && (!alreadyQuoted || *colDefault != "NULL") {
+		if colDefault != nil {
 			col.Default = *colDefault
 			col.DefaultIsEmpty = false
 		} else {
 			col.DefaultIsEmpty = true
 		}
 
-		fields := strings.Fields(colType)
-		if len(fields) == 2 && fields[1] == "unsigned" {
-			isUnsigned = true
-		}
-		colType = fields[0]
 		cts := strings.Split(colType, "(")
 		colName := cts[0]
-		// Remove the /* mariadb-5.3 */ suffix from coltypes
-		colName = strings.TrimSuffix(colName, "/* mariadb-5.3 */")
 		colType = strings.ToUpper(colName)
 		var len1, len2 int
 		if len(cts) == 2 {
@@ -440,8 +373,11 @@ func (db *mysql) GetColumns(queryer core.Queryer, ctx context.Context, tableName
 				}
 			}
 		}
-		if isUnsigned {
-			colType = "UNSIGNED " + colType
+		if colType == "FLOAT UNSIGNED" {
+			colType = "FLOAT"
+		}
+		if colType == "DOUBLE UNSIGNED" {
+			colType = "DOUBLE"
 		}
 		col.Length = len1
 		col.Length2 = len2
@@ -463,9 +399,9 @@ func (db *mysql) GetColumns(queryer core.Queryer, ctx context.Context, tableName
 		}
 
 		if !col.DefaultIsEmpty {
-			if !alreadyQuoted && col.SQLType.IsText() {
+			if col.SQLType.IsText() {
 				col.Default = "'" + col.Default + "'"
-			} else if col.SQLType.IsTime() && !alreadyQuoted && col.Default != "CURRENT_TIMESTAMP" {
+			} else if col.SQLType.IsTime() && col.Default != "CURRENT_TIMESTAMP" {
 				col.Default = "'" + col.Default + "'"
 			}
 		}
@@ -589,8 +525,11 @@ func (db *mysql) CreateTableSQL(table *schemas.Table, tableName string) ([]strin
 
 		for _, colName := range table.ColumnsSeq() {
 			col := table.GetColumn(colName)
-			s, _ := ColumnString(db, col, col.IsPrimaryKey && len(pkList) == 1)
-			sql += s
+			if col.IsPrimaryKey && len(pkList) == 1 {
+				sql += db.String(col)
+			} else {
+				sql += db.StringNoPk(col)
+			}
 			sql = strings.TrimSpace(sql)
 			if len(col.Comment) > 0 {
 				sql += " COMMENT '" + col.Comment + "'"

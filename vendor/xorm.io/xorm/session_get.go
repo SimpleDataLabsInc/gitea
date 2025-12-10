@@ -16,11 +16,6 @@ import (
 	"xorm.io/xorm/schemas"
 )
 
-var (
-	// ErrObjectIsNil return error of object is nil
-	ErrObjectIsNil = errors.New("object should not be nil")
-)
-
 // Get retrieve one record from database, bean's non-empty fields
 // will be as conditions
 func (session *Session) Get(bean interface{}) (bool, error) {
@@ -42,8 +37,6 @@ func (session *Session) get(bean interface{}) (bool, error) {
 		return false, errors.New("needs a pointer to a value")
 	} else if beanValue.Elem().Kind() == reflect.Ptr {
 		return false, errors.New("a pointer to a pointer is not allowed")
-	} else if beanValue.IsNil() {
-		return false, ErrObjectIsNil
 	}
 
 	if beanValue.Elem().Kind() == reflect.Struct {
@@ -249,7 +242,7 @@ func (session *Session) nocacheGet(beanKind reflect.Kind, table *schemas.Table, 
 		if err != nil {
 			return false, err
 		}
-		// close it before convert data
+		// close it before covert data
 		rows.Close()
 
 		dataStruct := utils.ReflectValue(bean)

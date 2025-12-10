@@ -8,7 +8,6 @@ import (
 	"strings"
 )
 
-// IsSubQuery returns true if it contains a sub query
 func IsSubQuery(tbName string) bool {
 	const selStr = "select"
 	if len(tbName) <= len(selStr)+1 {

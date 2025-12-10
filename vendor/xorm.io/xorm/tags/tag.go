@@ -14,74 +14,30 @@ import (
 	"xorm.io/xorm/schemas"
 )
 
-type tag struct {
-	name   string
-	params []string
-}
-
-func splitTag(tagStr string) ([]tag, error) {
-	tagStr = strings.TrimSpace(tagStr)
-	var (
-		inQuote    bool
-		inBigQuote bool
-		lastIdx    int
-		curTag     tag
-		paramStart int
-		tags       []tag
-	)
-	for i, t := range tagStr {
-		switch t {
-		case '\'':
-			inQuote = !inQuote
-		case ' ':
-			if !inQuote && !inBigQuote {
-				if lastIdx < i {
-					if curTag.name == "" {
-						curTag.name = tagStr[lastIdx:i]
-					}
-					tags = append(tags, curTag)
-					lastIdx = i + 1
-					curTag = tag{}
-				} else if lastIdx == i {
-					lastIdx = i + 1
-				}
-			} else if inBigQuote && !inQuote {
-				paramStart = i + 1
-			}
-		case ',':
-			if !inQuote && !inBigQuote {
-				return nil, fmt.Errorf("comma[%d] of %s should be in quote or big quote", i, tagStr)
-			}
-			if !inQuote && inBigQuote {
-				curTag.params = append(curTag.params, strings.TrimSpace(tagStr[paramStart:i]))
-				paramStart = i + 1
-			}
-		case '(':
-			inBigQuote = true
-			if !inQuote {
-				curTag.name = tagStr[lastIdx:i]
-				paramStart = i + 1
-			}
-		case ')':
-			inBigQuote = false
-			if !inQuote {
-				curTag.params = append(curTag.params, tagStr[paramStart:i])
+func splitTag(tag string) (tags []string) {
+	tag = strings.TrimSpace(tag)
+	var hasQuote = false
+	var lastIdx = 0
+	for i, t := range tag {
+		if t == '\'' {
+			hasQuote = !hasQuote
+		} else if t == ' ' {
+			if lastIdx < i && !hasQuote {
+				tags = append(tags, strings.TrimSpace(tag[lastIdx:i]))
+				lastIdx = i + 1
 			}
 		}
 	}
-	if lastIdx < len(tagStr) {
-		if curTag.name == "" {
-			curTag.name = tagStr[lastIdx:]
-		}
-		tags = append(tags, curTag)
+	if lastIdx < len(tag) {
+		tags = append(tags, strings.TrimSpace(tag[lastIdx:]))
 	}
-	return tags, nil
+	return
 }
 
 // Context represents a context for xorm tag parse.
 type Context struct {
-	tag
-	tagUname        string
+	tagName         string
+	params          []string
 	preTag, nextTag string
 	table           *schemas.Table
 	col             *schemas.Column
@@ -120,7 +76,6 @@ var (
 		"CACHE":    CacheTagHandler,
 		"NOCACHE":  NoCacheTagHandler,
 		"COMMENT":  CommentTagHandler,
-		"EXTENDS":  ExtendsTagHandler,
 	}
 )
 
@@ -169,7 +124,6 @@ func NotNullTagHandler(ctx *Context) error {
 // AutoIncrTagHandler describes autoincr tag handler
 func AutoIncrTagHandler(ctx *Context) error {
 	ctx.col.IsAutoIncrement = true
-	ctx.col.Nullable = false
 	/*
 		if len(ctx.params) > 0 {
 			autoStartInt, err := strconv.Atoi(ctx.params[0])
@@ -238,7 +192,6 @@ func UpdatedTagHandler(ctx *Context) error {
 // DeletedTagHandler describes deleted tag handler
 func DeletedTagHandler(ctx *Context) error {
 	ctx.col.IsDeleted = true
-	ctx.col.Nullable = true
 	return nil
 }
 
@@ -272,44 +225,38 @@ func CommentTagHandler(ctx *Context) error {
 
 // SQLTypeTagHandler describes SQL Type tag handler
 func SQLTypeTagHandler(ctx *Context) error {
-	ctx.col.SQLType = schemas.SQLType{Name: ctx.tagUname}
-	if ctx.tagUname == "JSON" {
-		ctx.col.IsJSON = true
-	}
-	if len(ctx.params) == 0 {
-		return nil
-	}
-
-	switch ctx.tagUname {
-	case schemas.Enum:
-		ctx.col.EnumOptions = make(map[string]int)
-		for k, v := range ctx.params {
-			v = strings.TrimSpace(v)
-			v = strings.Trim(v, "'")
-			ctx.col.EnumOptions[v] = k
-		}
-	case schemas.Set:
-		ctx.col.SetOptions = make(map[string]int)
-		for k, v := range ctx.params {
-			v = strings.TrimSpace(v)
-			v = strings.Trim(v, "'")
-			ctx.col.SetOptions[v] = k
-		}
-	default:
-		var err error
-		if len(ctx.params) == 2 {
-			ctx.col.Length, err = strconv.Atoi(ctx.params[0])
-			if err != nil {
-				return err
+	ctx.col.SQLType = schemas.SQLType{Name: ctx.tagName}
+	if len(ctx.params) > 0 {
+		if ctx.tagName == schemas.Enum {
+			ctx.col.EnumOptions = make(map[string]int)
+			for k, v := range ctx.params {
+				v = strings.TrimSpace(v)
+				v = strings.Trim(v, "'")
+				ctx.col.EnumOptions[v] = k
 			}
-			ctx.col.Length2, err = strconv.Atoi(ctx.params[1])
-			if err != nil {
-				return err
+		} else if ctx.tagName == schemas.Set {
+			ctx.col.SetOptions = make(map[string]int)
+			for k, v := range ctx.params {
+				v = strings.TrimSpace(v)
+				v = strings.Trim(v, "'")
+				ctx.col.SetOptions[v] = k
 			}
-		} else if len(ctx.params) == 1 {
-			ctx.col.Length, err = strconv.Atoi(ctx.params[0])
-			if err != nil {
-				return err
+		} else {
+			var err error
+			if len(ctx.params) == 2 {
+				ctx.col.Length, err = strconv.Atoi(ctx.params[0])
+				if err != nil {
+					return err
+				}
+				ctx.col.Length2, err = strconv.Atoi(ctx.params[1])
+				if err != nil {
+					return err
+				}
+			} else if len(ctx.params) == 1 {
+				ctx.col.Length, err = strconv.Atoi(ctx.params[0])
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -339,12 +286,11 @@ func ExtendsTagHandler(ctx *Context) error {
 		}
 		for _, col := range parentTable.Columns() {
 			col.FieldName = fmt.Sprintf("%v.%v", ctx.col.FieldName, col.FieldName)
-			col.FieldIndex = append(ctx.col.FieldIndex, col.FieldIndex...)
 
 			var tagPrefix = ctx.col.FieldName
 			if len(ctx.params) > 0 {
 				col.Nullable = isPtr
-				tagPrefix = strings.Trim(ctx.params[0], "'")
+				tagPrefix = ctx.params[0]
 				if col.IsPrimaryKey {
 					col.Name = ctx.col.FieldName
 					col.IsPrimaryKey = false
@@ -366,7 +312,7 @@ func ExtendsTagHandler(ctx *Context) error {
 	default:
 		//TODO: warning
 	}
-	return ErrIgnoreField
+	return nil
 }
 
 // CacheTagHandler describes cache tag handler

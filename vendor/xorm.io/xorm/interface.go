@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"xorm.io/xorm/caches"
-	"xorm.io/xorm/contexts"
 	"xorm.io/xorm/dialects"
 	"xorm.io/xorm/log"
 	"xorm.io/xorm/names"
@@ -83,7 +82,6 @@ type EngineInterface interface {
 	Context(context.Context) *Session
 	CreateTables(...interface{}) error
 	DBMetas() ([]*schemas.Table, error)
-	DBVersion() (*schemas.Version, error)
 	Dialect() dialects.Dialect
 	DriverName() string
 	DropTables(...interface{}) error
@@ -102,7 +100,6 @@ type EngineInterface interface {
 	SetCacher(string, caches.Cacher)
 	SetConnMaxLifetime(time.Duration)
 	SetColumnMapper(names.Mapper)
-	SetTagIdentifier(string)
 	SetDefaultCacher(caches.Cacher)
 	SetLogger(logger interface{})
 	SetLogLevel(log.LogLevel)
@@ -114,7 +111,6 @@ type EngineInterface interface {
 	SetTableMapper(names.Mapper)
 	SetTZDatabase(tz *time.Location)
 	SetTZLocation(tz *time.Location)
-	AddHook(hook contexts.Hook)
 	ShowSQL(show ...bool)
 	Sync(...interface{}) error
 	Sync2(...interface{}) error
@@ -122,7 +118,6 @@ type EngineInterface interface {
 	TableInfo(bean interface{}) (*schemas.Table, error)
 	TableName(interface{}, ...bool) string
 	UnMapType(reflect.Type)
-	EnableSessionID(bool)
 }
 
 var (

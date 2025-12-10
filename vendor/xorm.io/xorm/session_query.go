@@ -75,18 +75,69 @@ func value2String(rawValue *reflect.Value) (str string, err error) {
 	return
 }
 
-func (session *Session) rows2Strings(rows *core.Rows) (resultsSlice []map[string]string, err error) {
+func row2mapStr(rows *core.Rows, fields []string) (resultsMap map[string]string, err error) {
+	result := make(map[string]string)
+	scanResultContainers := make([]interface{}, len(fields))
+	for i := 0; i < len(fields); i++ {
+		var scanResultContainer interface{}
+		scanResultContainers[i] = &scanResultContainer
+	}
+	if err := rows.Scan(scanResultContainers...); err != nil {
+		return nil, err
+	}
+
+	for ii, key := range fields {
+		rawValue := reflect.Indirect(reflect.ValueOf(scanResultContainers[ii]))
+		// if row is null then as empty string
+		if rawValue.Interface() == nil {
+			result[key] = ""
+			continue
+		}
+
+		if data, err := value2String(&rawValue); err == nil {
+			result[key] = data
+		} else {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+func row2sliceStr(rows *core.Rows, fields []string) (results []string, err error) {
+	result := make([]string, 0, len(fields))
+	scanResultContainers := make([]interface{}, len(fields))
+	for i := 0; i < len(fields); i++ {
+		var scanResultContainer interface{}
+		scanResultContainers[i] = &scanResultContainer
+	}
+	if err := rows.Scan(scanResultContainers...); err != nil {
+		return nil, err
+	}
+
+	for i := 0; i < len(fields); i++ {
+		rawValue := reflect.Indirect(reflect.ValueOf(scanResultContainers[i]))
+		// if row is null then as empty string
+		if rawValue.Interface() == nil {
+			result = append(result, "")
+			continue
+		}
+
+		if data, err := value2String(&rawValue); err == nil {
+			result = append(result, data)
+		} else {
+			return nil, err
+		}
+	}
+	return result, nil
+}
+
+func rows2Strings(rows *core.Rows) (resultsSlice []map[string]string, err error) {
 	fields, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-	types, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
 	for rows.Next() {
-		result, err := session.engine.row2mapStr(rows, types, fields)
+		result, err := row2mapStr(rows, fields)
 		if err != nil {
 			return nil, err
 		}
@@ -96,18 +147,13 @@ func (session *Session) rows2Strings(rows *core.Rows) (resultsSlice []map[string
 	return resultsSlice, nil
 }
 
-func (session *Session) rows2SliceString(rows *core.Rows) (resultsSlice [][]string, err error) {
+func rows2SliceString(rows *core.Rows) (resultsSlice [][]string, err error) {
 	fields, err := rows.Columns()
 	if err != nil {
 		return nil, err
 	}
-	types, err := rows.ColumnTypes()
-	if err != nil {
-		return nil, err
-	}
-
 	for rows.Next() {
-		record, err := session.engine.row2sliceStr(rows, types, fields)
+		record, err := row2sliceStr(rows, fields)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +180,7 @@ func (session *Session) QueryString(sqlOrArgs ...interface{}) ([]map[string]stri
 	}
 	defer rows.Close()
 
-	return session.rows2Strings(rows)
+	return rows2Strings(rows)
 }
 
 // QuerySliceString runs a raw sql and return records as [][]string
@@ -154,7 +200,7 @@ func (session *Session) QuerySliceString(sqlOrArgs ...interface{}) ([][]string, 
 	}
 	defer rows.Close()
 
-	return session.rows2SliceString(rows)
+	return rows2SliceString(rows)
 }
 
 func row2mapInterface(rows *core.Rows, fields []string) (resultsMap map[string]interface{}, err error) {

@@ -14,7 +14,6 @@ import (
 	"xorm.io/xorm/schemas"
 )
 
-// GenQuerySQL generate query SQL
 func (statement *Statement) GenQuerySQL(sqlOrArgs ...interface{}) (string, []interface{}, error) {
 	if len(sqlOrArgs) > 0 {
 		return statement.ConvertSQLOrArgs(sqlOrArgs...)
@@ -73,7 +72,6 @@ func (statement *Statement) GenQuerySQL(sqlOrArgs ...interface{}) (string, []int
 	return sqlStr, args, nil
 }
 
-// GenSumSQL generates sum SQL
 func (statement *Statement) GenSumSQL(bean interface{}, columns ...string) (string, []interface{}, error) {
 	if statement.RawSQL != "" {
 		return statement.GenRawSQL(), statement.RawParams, nil
@@ -104,15 +102,11 @@ func (statement *Statement) GenSumSQL(bean interface{}, columns ...string) (stri
 	return sqlStr, append(statement.joinArgs, condArgs...), nil
 }
 
-// GenGetSQL generates Get SQL
 func (statement *Statement) GenGetSQL(bean interface{}) (string, []interface{}, error) {
-	var isStruct bool
-	if bean != nil {
-		v := rValue(bean)
-		isStruct = v.Kind() == reflect.Struct
-		if isStruct {
-			statement.SetRefBean(bean)
-		}
+	v := rValue(bean)
+	isStruct := v.Kind() == reflect.Struct
+	if isStruct {
+		statement.SetRefBean(bean)
 	}
 
 	var columnStr = statement.ColumnStr()
@@ -184,20 +178,9 @@ func (statement *Statement) GenCountSQL(beans ...interface{}) (string, []interfa
 			selectSQL = "count(*)"
 		}
 	}
-	var subQuerySelect string
-	if statement.GroupByStr != "" {
-		subQuerySelect = statement.GroupByStr
-	} else {
-		subQuerySelect = selectSQL
-	}
-
-	sqlStr, condArgs, err := statement.genSelectSQL(subQuerySelect, false, false)
+	sqlStr, condArgs, err := statement.genSelectSQL(selectSQL, false, false)
 	if err != nil {
 		return "", nil, err
-	}
-
-	if statement.GroupByStr != "" {
-		sqlStr = fmt.Sprintf("SELECT %s FROM (%s) sub", selectSQL, sqlStr)
 	}
 
 	return sqlStr, append(statement.joinArgs, condArgs...), nil
@@ -333,7 +316,6 @@ func (statement *Statement) genSelectSQL(columnStr string, needLimit, needOrderB
 	return buf.String(), condArgs, nil
 }
 
-// GenExistSQL generates Exist SQL
 func (statement *Statement) GenExistSQL(bean ...interface{}) (string, []interface{}, error) {
 	if statement.RawSQL != "" {
 		return statement.GenRawSQL(), statement.RawParams, nil
@@ -343,25 +325,12 @@ func (statement *Statement) GenExistSQL(bean ...interface{}) (string, []interfac
 	var args []interface{}
 	var joinStr string
 	var err error
-	var b interface{}
-	if len(bean) > 0 {
-		b = bean[0]
-		beanValue := reflect.ValueOf(bean[0])
-		if beanValue.Kind() != reflect.Ptr {
-			return "", nil, errors.New("needs a pointer")
+	if len(bean) == 0 {
+		tableName := statement.TableName()
+		if len(tableName) <= 0 {
+			return "", nil, ErrTableNotFound
 		}
 
-		if beanValue.Elem().Kind() == reflect.Struct {
-			if err := statement.SetRefBean(bean[0]); err != nil {
-				return "", nil, err
-			}
-		}
-	}
-	tableName := statement.TableName()
-	if len(tableName) <= 0 {
-		return "", nil, ErrTableNotFound
-	}
-	if statement.RefTable == nil {
 		tableName = statement.quote(tableName)
 		if len(statement.JoinStr) > 0 {
 			joinStr = statement.JoinStr
@@ -392,8 +361,22 @@ func (statement *Statement) GenExistSQL(bean ...interface{}) (string, []interfac
 			args = []interface{}{}
 		}
 	} else {
+		beanValue := reflect.ValueOf(bean[0])
+		if beanValue.Kind() != reflect.Ptr {
+			return "", nil, errors.New("needs a pointer")
+		}
+
+		if beanValue.Elem().Kind() == reflect.Struct {
+			if err := statement.SetRefBean(bean[0]); err != nil {
+				return "", nil, err
+			}
+		}
+
+		if len(statement.TableName()) <= 0 {
+			return "", nil, ErrTableNotFound
+		}
 		statement.Limit(1)
-		sqlStr, args, err = statement.GenGetSQL(b)
+		sqlStr, args, err = statement.GenGetSQL(bean[0])
 		if err != nil {
 			return "", nil, err
 		}
@@ -402,7 +385,6 @@ func (statement *Statement) GenExistSQL(bean ...interface{}) (string, []interfac
 	return sqlStr, args, nil
 }
 
-// GenFindSQL generates Find SQL
 func (statement *Statement) GenFindSQL(autoCond builder.Cond) (string, []interface{}, error) {
 	if statement.RawSQL != "" {
 		return statement.GenRawSQL(), statement.RawParams, nil
