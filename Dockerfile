@@ -1,7 +1,7 @@
 
 ###################################
 #Build stage
-FROM golang:1.24.11-alpine3.22 AS build-env
+FROM golang:1.25-alpine AS build-env
 
 #ARG GOPROXY
 #ENV GOPROXY ${GOPROXY:-direct}
@@ -27,7 +27,7 @@ RUN if [ -n "${GITEA_VERSION}" ]; then git checkout "${GITEA_VERSION}"; fi \
   #&& make build
   && make clean-all build
 
-FROM alpine:3.22
+FROM alpine:3.23
 LABEL maintainer="maintainers@gitea.io"
 
 EXPOSE 22 3000
