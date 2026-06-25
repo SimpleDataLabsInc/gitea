@@ -10,7 +10,12 @@ ARG GITEA_VERSION="release/v1.12"
 ARG TAGS="sqlite sqlite_unlock_notify"
 ENV TAGS "bindata $TAGS"
 ENV NODE_OPTIONS "--openssl-legacy-provider"
-#ARG CGO_EXTRA_CFLAGS
+# ponytail: musl 1.2.5+ dropped the LFS64 aliases (off64_t/pread64) that the
+# pinned mattn/go-sqlite3 C still references; expose them via the largefile
+# macro. Set CGO_CFLAGS (not CGO_EXTRA_CFLAGS — the Makefile hard-overrides
+# that with :=); the Makefile's CGO_CFLAGS ?= keeps this env value. Keep the
+# project's SQLITE_MAX_VARIABLE_NUMBER define. Drop once go-sqlite3 is bumped.
+ENV CGO_CFLAGS="-g -O2 -DSQLITE_MAX_VARIABLE_NUMBER=32766 -D_LARGEFILE64_SOURCE"
 
 #Build deps
 RUN apk update && \
