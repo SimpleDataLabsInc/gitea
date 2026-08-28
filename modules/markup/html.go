@@ -313,9 +313,17 @@ func (ctx *postProcessCtx) postProcess(rawHTML []byte) ([]byte, error) {
 	res = append(res, byteBodyTagClosing...)
 
 	// parse the HTML
-	nodes, err := html.ParseFragment(bytes.NewReader(res), nil)
+	// ponytail: html.Parse, not ParseFragment(r, nil) — x/net >= v0.56.0
+	// nil-panics on a nil fragment context. res is a whole document anyway
+	// (wrapped in <body>), which is exactly what Parse expects.
+	doc, err := html.Parse(bytes.NewReader(res))
 	if err != nil {
 		return nil, &postProcessError{"invalid HTML", err}
+	}
+	// same node set ParseFragment(res, nil) used to return: the document's children
+	nodes := make([]*html.Node, 0, 2)
+	for c := doc.FirstChild; c != nil; c = c.NextSibling {
+		nodes = append(nodes, c)
 	}
 
 	for _, node := range nodes {
