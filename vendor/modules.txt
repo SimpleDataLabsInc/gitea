@@ -870,7 +870,7 @@ golang.org/x/crypto/ssh/knownhosts
 golang.org/x/mod/internal/lazyregexp
 golang.org/x/mod/module
 golang.org/x/mod/semver
-# golang.org/x/net v0.56.0 => golang.org/x/net v0.55.0
+# golang.org/x/net v0.56.0
 ## explicit; go 1.25.0
 golang.org/x/net/context
 golang.org/x/net/html
@@ -1053,4 +1053,3 @@ xorm.io/xorm/names
 xorm.io/xorm/schemas
 xorm.io/xorm/tags
 # github.com/blevesearch/zap/v15 => github.com/blevesearch/zap/v14 v14.0.0
-# golang.org/x/net => golang.org/x/net v0.55.0

@@ -220,5 +220,3 @@ require (
 )
 
 replace github.com/blevesearch/zap/v15 => github.com/blevesearch/zap/v14 v14.0.0
-
-replace golang.org/x/net => golang.org/x/net v0.55.0
