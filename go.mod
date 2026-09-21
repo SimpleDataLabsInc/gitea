@@ -1,6 +1,6 @@
 module code.gitea.io/gitea
 
-go 1.25.13
+go 1.26.6
 
 require (
 	gitea.com/jolheiser/gitea-vet v0.1.0
@@ -77,7 +77,7 @@ require (
 	github.com/yohcop/openid-go v1.0.0
 	github.com/yuin/goldmark v1.7.13
 	github.com/yuin/goldmark-meta v0.0.0-20191126180153-f0638e958b60
-	golang.org/x/crypto v0.55.0
+	golang.org/x/crypto v0.56.0
 	golang.org/x/net v0.57.0
 	golang.org/x/oauth2 v0.27.0
 	golang.org/x/sys v0.47.0
